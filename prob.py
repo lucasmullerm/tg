@@ -1,11 +1,13 @@
-import logging as log
 from collections import defaultdict
+import logging as log
+
+import config
 from music21 import converter
 
 log.basicConfig(level=log.INFO)
 
 ### CONSTANTS
-FILE = "bwv539.mid"
+FILE = config.files[0] + '.' + config.extension
 MAJOR = 'major'
 MINOR = 'minor'
 NOTES = {'A' : 1,
@@ -40,9 +42,20 @@ class Probability:
     Can add information from midi files.
     """
     def __init__(self):
-        self.majorCount = defaultdict(int)
-        self.minorCount = defaultdict(int)
+        self.majorCount = [defaultdict(int) for i in range(3)]
+        self.minorCount = [defaultdict(int) for i in range(3)]
         self.total = 0
+
+    # event holds prev and prev2 if the case
+    # level = notes before used to predict
+    def P(self, event, mode, level):
+        assert not level or len(event) == level + 1
+        if mode == MAJOR:
+            return self.majorCount[level][event] / self.total
+        elif mode == MINOR:
+            return self.minorCount[level][event] / self.total
+        else:
+            raise "Invalid mode: " + str(mode)
 
     def __getNoteNumber(self, tonic, note):
         noteSymbol = note.name
@@ -59,6 +72,8 @@ class Probability:
         else:
             raise 'did not recognize key'
 
+        prev = 0
+        prev2 = 0 #2nd previous
         for event in part.flat.notes:
             if event.isNote:
                 num = self.__getNoteNumber(tonic, event)
@@ -70,7 +85,12 @@ class Probability:
                 raise 'Invalid Type: ' + str(event)
 
             self.total += 1
-            count[num] += 1
+            count[0][num] += 1
+            count[1][(prev, num)] += 1
+            count[2][(prev2, prev, num)] += 1
+
+            prev2 = prev
+            prev = num
 
     def include_file(self, filename):
         song = converter.parse(filename)
@@ -84,6 +104,7 @@ class Probability:
 def main():
     p = Probability()
     p.include_file(FILE)
+    print('end')
 
 if __name__ == '__main__':
     main()
