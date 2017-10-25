@@ -1,5 +1,8 @@
+import logging as log
 from collections import defaultdict
 from music21 import converter
+
+log.basicConfig(level=log.INFO)
 
 ### CONSTANTS
 FILE = "bwv539.mid"
@@ -42,7 +45,8 @@ class Probability:
         self.total = 0
 
     def __getNoteNumber(self, tonic, note):
-        num = NOTES[note] - NOTES[tonic] + 1
+        noteSymbol = note.name
+        num = NOTES[noteSymbol] - NOTES[tonic] + 1
         return num if num > 0 else num + 12
 
     def __include_part(self, part, key):
@@ -71,6 +75,7 @@ class Probability:
     def include_file(self, filename):
         song = converter.parse(filename)
         key = song.analyze('key')
+        log.info(key)
         parts = list(song.parts)
         self.__include_part(parts[0], key)
         if len(parts) > 1:
