@@ -1,15 +1,14 @@
 from collections import defaultdict
 import logging as log
+import os
 
 import config
 from music21 import converter
 
-log.basicConfig(level=log.INFO)
-
 ### CONSTANTS
-FILE = config.files[0] + '.' + config.extension
 MAJOR = 'major'
 MINOR = 'minor'
+SONGS_FOLDER = 'songs'
 NOTES = {'A' : 1,
          'A#': 2, 'B-': 2,
          'B' : 3,
@@ -28,13 +27,16 @@ class Event: # Note or Chord
     Event is a note, chord or rest, with values relative to tonic.
     """
     def __init__(self, *args):
-        self.value = args[0] if len(args) < 2 else tuple(sorted(args))
+        self.value = args[0] if len(args) < 2 else tuple(sorted(set(args)))
 
     def __hash__(self):
         return hash(self.value)
 
     def __eq__(self, other):
         return self.value == other.value
+
+    def __str__(self):
+        return str(self.value)
 
 class Probability:
     """
@@ -72,18 +74,18 @@ class Probability:
         else:
             raise 'did not recognize key'
 
-        prev = 0
-        prev2 = 0 #2nd previous
+        prev = Event(0)
+        prev2 = Event(0) #2nd previous
         for event in part.flat.notes:
             if event.isNote:
-                num = self.__getNoteNumber(tonic, event)
+                num = Event(self.__getNoteNumber(tonic, event))
             elif event.isChord:
-                num = tuple(map(lambda x: self.__getNoteNumber(tonic, x), event.pitches))
+                num = Event(*map(lambda x: self.__getNoteNumber(tonic, x), event.pitches))
             elif event.isRest:
-                num = 0
+                num = Event(0)
             else:
                 raise 'Invalid Type: ' + str(event)
-
+            
             self.total += 1
             count[0][num] += 1
             count[1][(prev, num)] += 1
@@ -101,10 +103,17 @@ class Probability:
         if len(parts) > 1:
             self.__include_part(parts[1], key)
 
-def main():
+def generate(directory):
     p = Probability()
-    p.include_file(FILE)
-    print('end')
+    for filename in os.listdir(directory):
+        filepath = os.path.join(directory, filename)
+        log.info(filepath)
+        p.include_file(filepath)
+    return p
+
+def main():
+    generate(SONGS_FOLDER)
+    log.info('end')
 
 if __name__ == '__main__':
     main()

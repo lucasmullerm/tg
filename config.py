@@ -1,5 +1,6 @@
+extension = '.mid'
 files = [
     'bwv539',
     'bwv733'
 ]
-extension = 'mid'
+files = map(lambda x: x + extension, files)
