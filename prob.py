@@ -77,7 +77,8 @@ class Probability:
             self.__include_part(parts[1], key)
 
 def main():
-    pass
+    p = Probability()
+    p.include_file(FILE)
 
 if __name__ == '__main__':
     main()
