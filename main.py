@@ -4,7 +4,7 @@ from prob import generate
 
 import operator
 
-log.basicConfig(filename='out.txt', level=log.DEBUG)
+log.basicConfig(filename='out.txt', filemode='w', level=log.DEBUG)
 
 SONGS_FOLDER = 'songs'
 
@@ -13,13 +13,12 @@ def sorted_dict(d):
 
 def main():
     p = generate(SONGS_FOLDER)
-    for x in sorted_dict(p.minorCount[2]):
+    for x in sorted_dict(p.eventCount[0][0]):
         log.debug(x)
-    log.debug('------------------ total minor: ' + str(p.minorTotal))
-    for x in sorted_dict(p.majorCount[2]):
+    log.debug('------------------ total minor: ' + str(p.total[0]))
+    for x in sorted_dict(p.eventCount[1][0]):
         log.debug(x)
-    log.debug('------------------ total major: ' + str(p.majorTotal))
-        # log.info(str(x) + ': ' + str(p.minorCount[2][x]))
+    log.debug('------------------ total major: ' + str(p.total[1]))
 
 if __name__ == '__main__':
     main()

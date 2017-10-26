@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict as ddict
 import logging as log
 import os
 
@@ -8,7 +8,12 @@ from music21 import converter
 ### CONSTANTS
 MAJOR = 'major'
 MINOR = 'minor'
+INDEX = {MAJOR: 0, MINOR: 1}
+MODE_MAX = len(INDEX)
 SONGS_FOLDER = 'songs'
+THRESHOLD = 2
+LEVEL_MAX = 3
+NOTES_TOTAL = 12
 NOTES = {'A' : 1,
          'A#': 2, 'B-': 2,
          'B' : 3,
@@ -22,7 +27,7 @@ NOTES = {'A' : 1,
          'G' : 11,
          'G#': 12, 'A-': 12}
 
-class Event: # Note or Chord
+class Event: # Note Rest or Chord
     """
     Event is a note, chord or rest, with values relative to tonic.
     """
@@ -47,52 +52,35 @@ class Probability:
     Can add information from midi files.
     """
     def __init__(self):
-        self.majorCount = [defaultdict(int) for i in range(3)]
-        self.minorCount = [defaultdict(int) for i in range(3)]
-        self.majorTotal = [0] * 3
-        self.minorTotal = [0] * 3
+        # eventCount = [MAJOR, MINOR]
+        self.eventCount = [[ddict(int) for l in range(LEVEL_MAX)] for m in range(MODE_MAX)]
+        self.total = [[0] * LEVEL_MAX, [0] * LEVEL_MAX]
 
     def filter(self):
-        for i in range(3):
-            # major
-            oldSize = len(self.majorCount[i])
-            self.majorCount[i] = defaultdict(int, {k: v for k, v in self.majorCount[i].items() if v > 1})
-            self.majorTotal[i] -= oldSize - len(self.majorCount[i])
-
-            #minor
-            oldSize = len(self.minorCount[i])
-            self.minorCount[i] = defaultdict(int, {k: v for k, v in self.minorCount[i].items() if v > 1})
-            self.minorTotal[i] -= oldSize - len(self.minorCount[i])
+        for mode in range(MODE_MAX): # major, minor
+            for level in range(LEVEL_MAX):
+                oldSize = len(self.eventCount[mode][level])
+                self.eventCount[mode][level] = ddict(int, {k: v for k, v in self.eventCount[mode][level].items() if v > THRESHOLD})
+                self.total[mode][level] -= oldSize - len(self.eventCount[mode][level])
 
     # event holds prev and prev2 if the case
     # level = notes before used to predict
     def P(self, event, mode='major', level=0):
         assert not level or len(event) == level + 1
-        if mode == MAJOR:
-            return self.majorCount[level][event] / self.majorTotal[level]
-        elif mode == MINOR:
-            return self.minorCount[level][event] / self.minorTotal[level]
-        else:
-            raise "Invalid mode: " + str(mode)
+        mode = INDEX[mode]
+        return self.eventCount[mode][level][event] / self.total[mode][level]
 
     def __getNoteNumber(self, tonic, note):
         noteSymbol = note.name
         num = NOTES[noteSymbol] - NOTES[tonic] + 1
-        return num if num > 0 else num + 12
+        return num if num > 0 else num + NOTES_TOTAL
 
     def __include_part(self, part, key):
         tonic = key.tonic.name
-        # Choose count dictionary
-        if key.type == MAJOR:
-            count = self.majorCount
-            for i in range(3):
-                self.majorTotal[i] += len(part.flat.notes)
-        elif key.type == MINOR:
-            count = self.minorCount
-            for i in range(3):
-                self.minorTotal[i] += len(part.flat.notes)
-        else:
-            raise 'did not recognize key'
+        mode = INDEX[key.type]
+        # update total number of events
+        for level in range(LEVEL_MAX):
+            self.total[mode][level] += len(part.flat.notes)
 
         prev = Event(0)
         prev2 = Event(0) #2nd previous
@@ -109,9 +97,9 @@ class Probability:
                 raise 'Invalid Type: ' + str(event)
 
             # update counter for probabilities
-            count[0][num] += 1
-            count[1][(prev, num)] += 1
-            count[2][(prev2, prev, num)] += 1
+            self.eventCount[mode][0][num] += 1
+            self.eventCount[mode][1][(prev, num)] += 1
+            self.eventCount[mode][2][(prev2, prev, num)] += 1
 
             # update previous
             prev2 = prev
