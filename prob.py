@@ -2,7 +2,7 @@ from collections import defaultdict as ddict
 import logging as log
 import os
 
-from util import Event, getNoteNumber
+from util import Event
 from music21 import converter
 
 ### CONSTANTS
@@ -39,32 +39,33 @@ class Probability:
     def __include_part(self, part, key):
         tonic = key.tonic.name
         mode = key.type
+        
         # update total number of events
         for level in range(LEVEL_MAX):
             self.total[mode][level] += len(part.flat.notes)
 
-        prev = Event(0)
-        prev2 = Event(0) #2nd previous
+        prev = Event.Rest()
+        prev2 = Event.Rest() #2nd previous
 
         # mapping from Note/Chord/Rest object to integers
         for event in part.flat.notesAndRests:
             if event.isNote:
-                num = Event(getNoteNumber(tonic, event.name))
+                cur = Event.Note(tonic, event.name)
             elif event.isChord:
-                num = Event(*map(lambda n: getNoteNumber(tonic, n.name), event.pitches))
+                cur = Event.Chord(tonic, map(lambda n: n.name, event.pitches))
             elif event.isRest:
-                num = Event(0)
+                cur = Event.Rest()
             else:
                 raise 'Invalid Type: ' + str(event)
 
             # update counter for probabilities
-            self.eventCount[mode][0][num] += 1
-            self.eventCount[mode][1][(prev, num)] += 1
-            self.eventCount[mode][2][(prev2, prev, num)] += 1
+            self.eventCount[mode][0][cur] += 1
+            self.eventCount[mode][1][(prev, cur)] += 1
+            self.eventCount[mode][2][(prev2, prev, cur)] += 1
 
             # update previous
             prev2 = prev
-            prev = num
+            prev = cur
 
     def include_file(self, filename):
         song = converter.parse(filename)

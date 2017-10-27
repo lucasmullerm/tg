@@ -17,19 +17,31 @@ def getNoteNumber(tonic, note):
     num = NOTES[note] - NOTES[tonic] + 1
     return num if num > 0 else num + NOTES_TOTAL
 
+def getChordNumbers(tonic, chord): #chord is a iterator of letters
+    return map(lambda n: getNoteNumber(tonic, n), chord)
+
 class Event: # Note Rest or Chord
     """
     Event is a note, chord or rest, with values relative to tonic.
     """
-    def __init__(self, *args):
-        if len(args) == 1:
-            self.value = args[0]
-            return
-        fargs = tuple(sorted(set(args)))
-        if len(fargs) == 1:
-            self.value = fargs[0]
-            return
-        self.value = fargs
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def Note(tonic, note): #note is a letter
+        return Event(getNoteNumber(tonic, note))
+
+    @staticmethod
+    def Rest():
+        return Event(0)
+
+    @staticmethod
+    def Chord(tonic, chord): #chord is iterable of letters
+        chord_numbers = getChordNumbers(tonic, set(chord))
+        chord_final = tuple(sorted(chord_numbers))
+        if len(chord_final) == 1: # chord has only the same note
+            return Event(chord_final[0])
+        return Event(chord_final)
 
     def __hash__(self):
         return hash(self.value)
