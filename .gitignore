@@ -1,6 +1,7 @@
 out.txt
 out
 
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

@@ -1,6 +1,6 @@
 import logging as log
 import os
-from prob import generate
+from prob import generate, MAJOR, MINOR
 
 import operator
 
@@ -13,12 +13,12 @@ def sorted_dict(d):
 
 def main():
     p = generate(SONGS_FOLDER)
-    for x in sorted_dict(p.eventCount[0][0]):
+    for x in sorted_dict(p.eventCount[MAJOR][0]):
         log.debug(x)
-    log.debug('------------------ total minor: ' + str(p.total[0]))
-    for x in sorted_dict(p.eventCount[1][0]):
+    log.debug('------------------ total major: ' + str(p.total[MAJOR]))
+    for x in sorted_dict(p.eventCount[MINOR][0]):
         log.debug(x)
-    log.debug('------------------ total major: ' + str(p.total[1]))
+    log.debug('------------------ total minor: ' + str(p.total[MINOR]))
 
 if __name__ == '__main__':
     main()

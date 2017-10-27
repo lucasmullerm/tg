@@ -2,14 +2,12 @@ from collections import defaultdict as ddict
 import logging as log
 import os
 
-import config
 from music21 import converter
 
 ### CONSTANTS
 MAJOR = 'major'
 MINOR = 'minor'
-INDEX = {MAJOR: 0, MINOR: 1}
-MODE_MAX = len(INDEX)
+MODES = [MAJOR, MINOR]
 SONGS_FOLDER = 'songs'
 THRESHOLD = 2
 LEVEL_MAX = 3
@@ -20,7 +18,7 @@ NOTES = {'A' : 1,
          'C' : 4,
          'C#': 5, 'D-': 5,
          'D' : 6,
-         'D-': 7, 'E-': 7,
+         'D#': 7, 'E-': 7,
          'E' : 8,
          'F' : 9,
          'F#': 10, 'G-': 10,
@@ -32,7 +30,14 @@ class Event: # Note Rest or Chord
     Event is a note, chord or rest, with values relative to tonic.
     """
     def __init__(self, *args):
-        self.value = args[0] if len(args) < 2 else tuple(sorted(set(args)))
+        if len(args) == 1:
+            self.value = args[0]
+            return
+        fargs = tuple(sorted(set(args)))
+        if len(fargs) == 1:
+            self.value = fargs[0]
+            return
+        self.value = fargs
 
     def __hash__(self):
         return hash(self.value)
@@ -53,11 +58,11 @@ class Probability:
     """
     def __init__(self):
         # eventCount = [MAJOR, MINOR]
-        self.eventCount = [[ddict(int) for l in range(LEVEL_MAX)] for m in range(MODE_MAX)]
-        self.total = [[0] * LEVEL_MAX, [0] * LEVEL_MAX]
+        self.eventCount = {m: [ddict(int) for l in range(LEVEL_MAX)] for m in MODES}
+        self.total = {m: [0] * LEVEL_MAX for m in MODES}
 
     def filter(self):
-        for mode in range(MODE_MAX): # major, minor
+        for mode in MODES:
             for level in range(LEVEL_MAX):
                 oldSize = len(self.eventCount[mode][level])
                 self.eventCount[mode][level] = ddict(int, {k: v for k, v in self.eventCount[mode][level].items() if v > THRESHOLD})
@@ -65,9 +70,8 @@ class Probability:
 
     # event holds prev and prev2 if the case
     # level = notes before used to predict
-    def P(self, event, mode='major', level=0):
+    def P(self, event, mode=MAJOR, level=0):
         assert not level or len(event) == level + 1
-        mode = INDEX[mode]
         return self.eventCount[mode][level][event] / self.total[mode][level]
 
     def __getNoteNumber(self, tonic, note):
@@ -77,7 +81,7 @@ class Probability:
 
     def __include_part(self, part, key):
         tonic = key.tonic.name
-        mode = INDEX[key.type]
+        mode = key.type
         # update total number of events
         for level in range(LEVEL_MAX):
             self.total[mode][level] += len(part.flat.notes)
@@ -86,7 +90,7 @@ class Probability:
         prev2 = Event(0) #2nd previous
 
         # mapping from Note/Chord/Rest object to integers
-        for event in part.flat.notes:
+        for event in part.flat.notesAndRests:
             if event.isNote:
                 num = Event(self.__getNoteNumber(tonic, event))
             elif event.isChord:
