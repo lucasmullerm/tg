@@ -2,6 +2,7 @@ from collections import defaultdict as ddict
 import logging as log
 import os
 
+from util import Event, getNoteNumber
 from music21 import converter
 
 ### CONSTANTS
@@ -11,45 +12,6 @@ MODES = [MAJOR, MINOR]
 SONGS_FOLDER = 'songs'
 THRESHOLD = 2
 LEVEL_MAX = 3
-NOTES_TOTAL = 12
-NOTES = {'A' : 1,
-         'A#': 2, 'B-': 2,
-         'B' : 3,
-         'C' : 4,
-         'C#': 5, 'D-': 5,
-         'D' : 6,
-         'D#': 7, 'E-': 7,
-         'E' : 8,
-         'F' : 9,
-         'F#': 10, 'G-': 10,
-         'G' : 11,
-         'G#': 12, 'A-': 12}
-
-class Event: # Note Rest or Chord
-    """
-    Event is a note, chord or rest, with values relative to tonic.
-    """
-    def __init__(self, *args):
-        if len(args) == 1:
-            self.value = args[0]
-            return
-        fargs = tuple(sorted(set(args)))
-        if len(fargs) == 1:
-            self.value = fargs[0]
-            return
-        self.value = fargs
-
-    def __hash__(self):
-        return hash(self.value)
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return self.__str__()
 
 class Probability:
     """
@@ -74,11 +36,6 @@ class Probability:
         assert not level or len(event) == level + 1
         return self.eventCount[mode][level][event] / self.total[mode][level]
 
-    def __getNoteNumber(self, tonic, note):
-        noteSymbol = note.name
-        num = NOTES[noteSymbol] - NOTES[tonic] + 1
-        return num if num > 0 else num + NOTES_TOTAL
-
     def __include_part(self, part, key):
         tonic = key.tonic.name
         mode = key.type
@@ -92,9 +49,9 @@ class Probability:
         # mapping from Note/Chord/Rest object to integers
         for event in part.flat.notesAndRests:
             if event.isNote:
-                num = Event(self.__getNoteNumber(tonic, event))
+                num = Event(getNoteNumber(tonic, event.name))
             elif event.isChord:
-                num = Event(*map(lambda x: self.__getNoteNumber(tonic, x), event.pitches))
+                num = Event(*map(lambda n: getNoteNumber(tonic, n.name), event.pitches))
             elif event.isRest:
                 num = Event(0)
             else:
