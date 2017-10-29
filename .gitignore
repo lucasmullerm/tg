@@ -1,6 +1,8 @@
 out.txt
 out
-
+log.txt
+log
+prob
 
 .vscode/*
 !.vscode/settings.json

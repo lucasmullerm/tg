@@ -1,6 +1,7 @@
 from collections import defaultdict as ddict
 import logging as log
 import os
+import pickle
 
 from util import Event
 from music21 import converter
@@ -39,7 +40,7 @@ class Probability:
     def __include_part(self, part, key):
         tonic = key.tonic.name
         mode = key.type
-        
+
         # update total number of events
         for level in range(LEVEL_MAX):
             self.total[mode][level] += len(part.flat.notes)
@@ -82,12 +83,13 @@ def generate(directory):
         filepath = os.path.join(directory, filename)
         log.info(filepath)
         p.include_file(filepath)
-    p.filter()
+    # p.filter()
     return p
 
 def main():
-    generate(SONGS_FOLDER)
-    log.info('end')
+    p = generate(SONGS_FOLDER)
+    with open('prob', 'wb') as output:
+        pickle.dump(p, output)
 
 if __name__ == '__main__':
     main()
