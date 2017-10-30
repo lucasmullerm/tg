@@ -23,6 +23,7 @@ class Probability:
         # eventCount = [MAJOR, MINOR]
         self.eventCount = {m: [ddict(int) for l in range(LEVEL_MAX)] for m in MODES}
         self.total = {m: [0] * LEVEL_MAX for m in MODES}
+        self.durationCount = {m: [ddict(int) for l in range(LEVEL_MAX)] for m in MODES}
 
     def filter(self):
         for mode in MODES:
@@ -30,12 +31,17 @@ class Probability:
                 oldSize = len(self.eventCount[mode][level])
                 self.eventCount[mode][level] = ddict(int, {k: v for k, v in self.eventCount[mode][level].items() if v > THRESHOLD})
                 self.total[mode][level] -= oldSize - len(self.eventCount[mode][level])
+                # TODO: duration filter
 
     # event holds prev and prev2 if the case
     # level = notes before used to predict
     def P(self, event, mode=MAJOR, level=0):
         assert not level or len(event) == level + 1
-        return self.eventCount[mode][level][event] / self.total[mode][level]
+        return (self.eventCount[mode][level][event] or 1)/ self.total[mode][level]
+
+    def durationP(self, dur, mode=MAJOR, level=0):
+        assert not level or len(dur) == level + 1
+        return (self.durationCount[mode][level][dur] or 1)/ self.total[mode][level]
 
     def __include_part(self, part, key):
         tonic = key.tonic.name
@@ -48,6 +54,9 @@ class Probability:
         prev = Event.Rest()
         prev2 = Event.Rest() #2nd previous
 
+        dPrev = 0
+        dPrev2 = 0 #2nd previous
+
         # mapping from Note/Chord/Rest object to integers
         for event in part.flat.notesAndRests:
             if event.isNote:
@@ -59,14 +68,24 @@ class Probability:
             else:
                 raise 'Invalid Type: ' + str(event)
 
+            dur = event.duration.quarterLength
+
             # update counter for probabilities
             self.eventCount[mode][0][cur] += 1
             self.eventCount[mode][1][(prev, cur)] += 1
             self.eventCount[mode][2][(prev2, prev, cur)] += 1
 
+            # update counter for duration
+            self.durationCount[mode][0][dur] += 1
+            self.durationCount[mode][1][(dPrev, dur)] += 1
+            self.durationCount[mode][2][(dPrev2, dPrev, dur)] += 1
+
             # update previous
             prev2 = prev
             prev = cur
+
+            dPrev2 = dPrev
+            dPrev = dur
 
     def include_file(self, filename):
         song = converter.parse(filename)
