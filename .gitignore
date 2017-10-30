@@ -3,6 +3,7 @@ out
 log.txt
 log
 prob
+rela/*
 
 .vscode/*
 !.vscode/settings.json
