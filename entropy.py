@@ -33,7 +33,7 @@ def calculate(key, track, prob):
 
         # update entropy
         for l in range(3):
-            h[l] += p[l] * log2(p[l])
+            h[l] -= p[l] * log2(p[l])
 
         # update previous
         prev2 = prev
