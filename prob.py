@@ -3,13 +3,10 @@ import logging as log
 import os
 import pickle
 
-from util import Event
+from util import Event, MAJOR, MINOR, MODES
 from music21 import converter
 
 ### CONSTANTS
-MAJOR = 'major'
-MINOR = 'minor'
-MODES = [MAJOR, MINOR]
 SONGS_FOLDER = 'songs'
 THRESHOLD = 2
 LEVEL_MAX = 3

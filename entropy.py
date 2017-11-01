@@ -4,6 +4,7 @@ import logging as log
 import pickle
 
 from prob import Probability
+from util import MAJOR, MINOR
 
 from music21 import converter
 
@@ -48,12 +49,33 @@ def calculate_from_file(filename, probability):
     parts = list(song.parts)
     return calculate(key, parts[0].flat.notesAndRests, probability)
 
+def calculate_all(p, mode=MAJOR, level=0, prev=0):
+    h = 0
+    prev = Event(prev)
+    for e in p.eventCount[mode][0]:
+        if level:
+            ev = (prev, e)
+            pe = p.P(ev, mode, 1)
+        else:
+            pe = p.P(e, mode)
+        h -= pe * log2(pe)
+    return h
+
 def main():
     with open('prob', 'rb') as input_file:
         p = pickle.load(input_file)
 
-    h = calculate_from_file('songs/bwv537.mid', p)
-    print(h)
+    # h = calculate_from_file('songs/bwv537.mid', p)
+    h = calculate_all(p, MAJOR)
+    print(MAJOR, h)
+    h = calculate_all(p, MINOR)
+    print(MINOR, h)
+    for prev in range(13):
+        h = calculate_all(p, MAJOR, 1, prev)
+        print(MAJOR, 'after', prev, h)
+    for prev in range(13):
+        h = calculate_all(p, MINOR, 1, prev)
+        print(MINOR, 'after', prev, h)
 
 if __name__ == '__main__':
     main()

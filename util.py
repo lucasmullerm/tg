@@ -1,4 +1,7 @@
 # Constants
+MAJOR = 'major'
+MINOR = 'minor'
+MODES = [MAJOR, MINOR]
 NOTES_TOTAL = 12
 NOTES = {'A' : 1,
          'A#': 2, 'B-': 2,
