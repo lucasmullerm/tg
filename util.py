@@ -38,6 +38,10 @@ class Event: # Note Rest or Chord
     def Rest():
         return Event(0)
 
+    # @staticmethod
+    # def Dist(prev, note): # prev and note are midi numbers
+    #     return Event(0)
+
     @staticmethod
     def Chord(tonic, chord): #chord is iterable of letters
         chord_numbers = getChordNumbers(tonic, set(chord))

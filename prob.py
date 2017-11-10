@@ -5,6 +5,7 @@ import pickle
 
 from util import Event, MAJOR, MINOR, MODES
 from music21 import converter
+from math import log2, inf
 
 ### CONSTANTS
 SONGS_FOLDER = 'songs'
@@ -18,9 +19,10 @@ class Probability:
     """
     def __init__(self):
         # eventCount = [MAJOR, MINOR]
-        self.eventCount = {m: [ddict(int) for l in range(LEVEL_MAX)] for m in MODES}
-        self.total = {m: [0] * LEVEL_MAX for m in MODES}
-        self.durationCount = {m: [ddict(int) for l in range(LEVEL_MAX)] for m in MODES}
+        self.eventCount = [ddict(int) for l in range(LEVEL_MAX)]
+        self.noteDiffCount = ddict(int)
+        self.total = [0] * LEVEL_MAX
+        self.durationCount = [ddict(int) for l in range(LEVEL_MAX)]
 
     def filter(self):
         for mode in MODES:
@@ -34,11 +36,15 @@ class Probability:
     # level = notes before used to predict
     def P(self, event, mode=MAJOR, level=0):
         assert not level or len(event) == level + 1
-        return (self.eventCount[mode][level][event] or 1)/ self.total[mode][level]
+        return (self.eventCount[level][event] or 1)/ self.total[level]
+
+    def diffP(self, event, mode=MAJOR, level=0):
+        assert not level or len(event) == level + 1
+        return (self.noteDiffCount[event] or 1)/ self.total[level]
 
     def durationP(self, dur, mode=MAJOR, level=0):
         assert not level or len(dur) == level + 1
-        return (self.durationCount[mode][level][dur] or 1)/ self.total[mode][level]
+        return (self.durationCount[level][dur] or 1)/ self.total[level]
 
     def __include_part(self, part, key):
         tonic = key.tonic.name
@@ -46,7 +52,7 @@ class Probability:
 
         # update total number of events
         for level in range(LEVEL_MAX):
-            self.total[mode][level] += len(part.flat.notes)
+            self.total[level] += len(part.flat.notes)
 
         prev = Event.Rest()
         prev2 = Event.Rest() #2nd previous
@@ -54,28 +60,38 @@ class Probability:
         dPrev = 0
         dPrev2 = 0 #2nd previous
 
+        prevMidi = 0
+
         # mapping from Note/Chord/Rest object to integers
         for event in part.flat.notesAndRests:
             if event.isNote:
                 cur = Event.Note(tonic, event.name)
+                midi = event.pitch.midi
             elif event.isChord:
-                cur = Event.Chord(tonic, map(lambda n: n.name, event.pitches))
+                cur = Event.Note(tonic, event.root().name) # root note from chord
+                # cur = Event.Chord(tonic, map(lambda n: n.name, event.pitches))
+                midi = event.root().midi
             elif event.isRest:
                 cur = Event.Rest()
+                midi = 0
             else:
                 raise 'Invalid Type: ' + str(event)
 
             dur = event.duration.quarterLength
+            dur = -inf if dur == 0 else log2(dur)
 
             # update counter for probabilities
-            self.eventCount[mode][0][cur] += 1
-            self.eventCount[mode][1][(prev, cur)] += 1
-            self.eventCount[mode][2][(prev2, prev, cur)] += 1
+            self.eventCount[0][cur] += 1
+            self.eventCount[1][(prev, cur)] += 1
+            self.eventCount[2][(prev2, prev, cur)] += 1
 
             # update counter for duration
-            self.durationCount[mode][0][dur] += 1
-            self.durationCount[mode][1][(dPrev, dur)] += 1
-            self.durationCount[mode][2][(dPrev2, dPrev, dur)] += 1
+            self.durationCount[0][dur] += 1
+            self.durationCount[1][(dPrev, dur)] += 1
+            self.durationCount[2][(dPrev2, dPrev, dur)] += 1
+
+            # relative diff
+            self.noteDiffCount[abs(midi-prevMidi)] += 1
 
             # update previous
             prev2 = prev
@@ -83,6 +99,8 @@ class Probability:
 
             dPrev2 = dPrev
             dPrev = dur
+
+            prevMidi = midi
 
     def include_file(self, filename):
         song = converter.parse(filename)

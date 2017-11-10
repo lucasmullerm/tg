@@ -1,4 +1,4 @@
-from math import log2
+from math import log2, inf
 from util import Event
 import logging as log
 import pickle
@@ -42,12 +42,71 @@ def calculate(key, track, prob):
 
     return h
 
+def calculate_inst_duration(key, track, prob):
+    instH = []
+
+    tonic = key.tonic.name
+    mode = key.type
+
+    for event in track:
+        dur = event.duration.quarterLength
+        dur = -inf if dur == 0 else log2(dur)
+        # event probability
+        p = prob.durationP(dur)
+
+        # update entropy
+        instH.append(-p * log2(p))
+
+    return instH
+
+def calculate_inst_diff(key, track, prob):
+    instH = []
+
+    tonic = key.tonic.name
+    mode = key.type
+
+    prev = 0
+
+    for event in track:
+        if event.isNote:
+            midi = event.pitch.midi
+        elif event.isChord:
+            midi = event.root().midi
+        elif event.isRest:
+            midi = 0
+        else:
+            raise 'Invalid Type: ' + str(event)
+            
+        # event probability
+        p = prob.diffP(abs(midi-prev))
+
+        # update entropy
+        instH.append(-p * log2(p))
+
+        prev = midi
+
+    return instH
+
 def calculate_from_file(filename, probability):
     song = converter.parse(filename)
     key = song.analyze('key')
     log.info(key)
     parts = list(song.parts)
     return calculate(key, parts[0].flat.notesAndRests, probability)
+
+def calculate_all_duration(p):
+    h = 0
+    for e in p.eventCount[0]:
+        pe = p.durationP(e)
+        h -= pe * log2(pe)
+    return h
+
+def calculate_all_diff(p):
+    h = 0
+    for e in p.noteDiffCount:
+        pe = p.diffP(e)
+        h -= pe * log2(pe)
+    return h
 
 def calculate_all(p, mode=MAJOR, level=0, prev=0):
     h = 0
