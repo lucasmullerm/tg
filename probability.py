@@ -1,4 +1,4 @@
-from math import log2, inf, isnan
+from math import isnan
 import logging as log
 import sys
 from collections import defaultdict
@@ -8,8 +8,6 @@ from music21 import converter
 log.basicConfig(level=log.INFO)
 
 # Constants
-MAX_LEVEL_COND = 2
-MAX_LEVEL_DELTA = 4
 class Probability(object):
     def __init__(self):
         self.total = 0
@@ -97,7 +95,7 @@ class Probability(object):
         log.info("Adding track with %d notes.", self.total - store_total)
 
 def main():
-    filename = sys.argv[1] if len(sys.argv) > 1 else 'songs/bwv653.mid'
+    filename = sys.argv[1] if len(sys.argv) > 1 else FAKE_FILE
     p = Probability.generate(filename)
     print()
 

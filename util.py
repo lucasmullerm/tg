@@ -1,3 +1,5 @@
+import math
+
 # Constants
 MAJOR = 'major'
 MINOR = 'minor'
@@ -19,7 +21,19 @@ NOTE = 'note'
 DURATION = 'duration'
 DELTA = 'delta'
 MEASURES = [NOTE, DURATION, DELTA]
-REST = -inf
+REST = -math.inf
+MAX_LEVEL_COND = 2
+MAX_LEVEL_DELTA = 4
+FAKE_FILE = 'songs/bwv653.mid'
+
+def getNoteSequency(note, prev_notes, level):
+    return tuple(prev_notes[MAX_LEVEL_COND-level:]) + (note,)
+
+def getDelta(midi, prev_midi, level):
+    delta = midi - prev_midi[-level]
+    if math.isnan(delta):
+        return 0
+    return delta
 
 def getNoteNumber(tonic, note):
     num = NOTES[note] - NOTES[tonic] + 1
