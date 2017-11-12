@@ -15,6 +15,11 @@ NOTES = {'A' : 1,
          'F#': 10, 'G-': 10,
          'G' : 11,
          'G#': 12, 'A-': 12}
+NOTE = 'note'
+DURATION = 'duration'
+DELTA = 'delta'
+MEASURES = [NOTE, DURATION, DELTA]
+REST = -inf
 
 def getNoteNumber(tonic, note):
     num = NOTES[note] - NOTES[tonic] + 1

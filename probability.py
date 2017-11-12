@@ -2,7 +2,7 @@ from math import log2, inf, isnan
 import logging as log
 import sys
 from collections import defaultdict
-from util import NOTES
+from util import *
 from music21 import converter
 
 log.basicConfig(level=log.INFO)
@@ -10,7 +10,6 @@ log.basicConfig(level=log.INFO)
 # Constants
 MAX_LEVEL_COND = 2
 MAX_LEVEL_DELTA = 4
-REST_MIDI = -inf
 class Probability(object):
     def __init__(self):
         self.total = 0
@@ -33,6 +32,14 @@ class Probability(object):
         assert level
         return self.deltas[level][delta] / self.total
 
+    def P(self, event, measure=NOTE, level=0):
+        if measure == NOTE:
+            return self.noteP(event, level)
+        elif measure == DURATION:
+            return self.durationP(event)
+        elif measure == DELTA:
+            return self.deltaP(event, level)
+
     def addSong(self, song, cut=250):
         for part in song.parts:
             if len(part.flat) > cut:
@@ -50,8 +57,8 @@ class Probability(object):
 
     def addTrack(self, track):
         store_total = self.total
-        prev_notes = [REST_MIDI] * MAX_LEVEL_COND
-        prev_midi = [REST_MIDI] * MAX_LEVEL_DELTA
+        prev_notes = [REST] * MAX_LEVEL_COND
+        prev_midi = [REST] * MAX_LEVEL_DELTA
         for event in track.flat.notesAndRests:
             self.total += 1
             dur = event.duration.quarterLength
@@ -62,8 +69,8 @@ class Probability(object):
                 note = NOTES[event.name]
                 midi = event.pitch.midi
             if event.isRest:
-                note = REST_MIDI
-                midi = REST_MIDI
+                note = REST
+                midi = REST
             elif event.isChord: # get root note
                 note = NOTES[event.root().name]
                 midi = event.root().midi
