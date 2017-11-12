@@ -1,8 +1,7 @@
-from math import isnan
 import logging as log
 import sys
 from collections import defaultdict
-from util import *
+import util
 from music21 import converter
 
 log.basicConfig(level=log.INFO)
@@ -12,8 +11,8 @@ class Probability(object):
     def __init__(self):
         self.total = 0
         self.duration = defaultdict(int) # log2
-        self.notes = [defaultdict(int) for i in range(MAX_LEVEL_COND)]
-        self.deltas = [defaultdict(int) for i in range(MAX_LEVEL_DELTA)]
+        self.notes = [defaultdict(int) for i in range(util.MAX_LEVEL_COND)]
+        self.deltas = [defaultdict(int) for i in range(util.MAX_LEVEL_DELTA)]
 
     def noteP(self, note, level=0): # note(index) or tuple [conditional]
         assert self.total
@@ -30,12 +29,12 @@ class Probability(object):
         assert level
         return self.deltas[level][delta] / self.total
 
-    def P(self, event, measure=NOTE, level=0):
-        if measure == NOTE:
+    def P(self, event, measure=util.NOTE, level=0):
+        if measure == util.NOTE:
             return self.noteP(event, level)
-        elif measure == DURATION:
+        elif measure == util.DURATION:
             return self.durationP(event)
-        elif measure == DELTA:
+        elif measure == util.DELTA:
             return self.deltaP(event, level)
 
     def addSong(self, song, cut=250):
@@ -55,8 +54,8 @@ class Probability(object):
 
     def addTrack(self, track):
         store_total = self.total
-        prev_notes = [REST] * MAX_LEVEL_COND
-        prev_midi = [REST] * MAX_LEVEL_DELTA
+        prev_notes = [util.REST] * util.MAX_LEVEL_COND
+        prev_midi = [util.REST] * util.MAX_LEVEL_DELTA
         for event in track.flat.notesAndRests:
             self.total += 1
             dur = event.duration.quarterLength
@@ -64,28 +63,26 @@ class Probability(object):
             # assert dur
             # dur = log2(dur)
             if event.isNote:
-                note = NOTES[event.name]
+                note = util.NOTES[event.name]
                 midi = event.pitch.midi
             if event.isRest:
-                note = REST
-                midi = REST
+                note = util.REST
+                midi = util.REST
             elif event.isChord: # get root note
-                note = NOTES[event.root().name]
+                note = util.NOTES[event.root().name]
                 midi = event.root().midi
 
-            # Add durationargs
+            # Add duration
             self.duration[dur] += 1
 
             # Add notes
-            for lv in range(MAX_LEVEL_COND):
-                cur = tuple(prev_notes[MAX_LEVEL_COND-lv:]) + (note,)
+            for lv in range(util.MAX_LEVEL_COND):
+                cur = util.getNoteSequency(note, prev_notes, lv)
                 self.notes[lv][cur] += 1
 
             # Add deltas
-            for lv in range(1, MAX_LEVEL_DELTA):
-                delta = midi - prev_midi[-lv]
-                if isnan(delta):
-                    delta = 0
+            for lv in range(1, util.MAX_LEVEL_DELTA):
+                delta = util.getDelta(midi, prev_midi, lv)
                 self.deltas[lv][delta] += 1
 
             # Update previous
@@ -95,7 +92,7 @@ class Probability(object):
         log.info("Adding track with %d notes.", self.total - store_total)
 
 def main():
-    filename = sys.argv[1] if len(sys.argv) > 1 else FAKE_FILE
+    filename = sys.argv[1] if len(sys.argv) > 1 else util.FAKE_FILE
     p = Probability.generate(filename)
     print()
 
