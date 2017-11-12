@@ -1,4 +1,4 @@
-from math import log2, inf
+from math import log2, inf, isnan
 import logging as log
 import sys
 from collections import defaultdict
@@ -8,7 +8,7 @@ from music21 import converter
 log.basicConfig(level=log.INFO)
 
 # Constants
-MAX_LEVEL_COND = 4
+MAX_LEVEL_COND = 2
 MAX_LEVEL_DELTA = 4
 REST_MIDI = -inf
 class Probability(object):
@@ -20,6 +20,8 @@ class Probability(object):
 
     def noteP(self, note, level=0): # note(index) or tuple [conditional]
         assert self.total
+        if not level and not isinstance(note, tuple):
+            note = (note,)
         return self.notes[level][note] / self.total
 
     def durationP(self, duration): # duration in quarterLength
@@ -38,7 +40,8 @@ class Probability(object):
         for event in track.flat.notesAndRests:
             self.total += 1
             dur = event.duration.quarterLength
-            assert dur
+            # assert dur
+            # dur = log2(dur)
             if event.isNote:
                 note = NOTES[event.name]
                 midi = event.pitch.midi
@@ -53,14 +56,16 @@ class Probability(object):
             self.duration[dur] += 1
 
             # Add notes
-            for l in range(MAX_LEVEL_COND):
-                cur = tuple(self.notes[MAX_LEVEL_COND-1:]) + (note,)
-                self.notes[l][cur] += 1
+            for lv in range(MAX_LEVEL_COND):
+                cur = tuple(prev_notes[MAX_LEVEL_COND-lv:]) + (note,)
+                self.notes[lv][cur] += 1
 
             # Add deltas
-            for l in range(1, MAX_LEVEL_DELTA):
-                delta = midi - prev_midi[-l]
-                self.deltas[l][delta] += 1
+            for lv in range(1, MAX_LEVEL_DELTA):
+                delta = midi - prev_midi[-lv]
+                if isnan(delta):
+                    delta = 0
+                self.deltas[lv][delta] += 1
 
             # Update previous
             prev_notes = prev_notes[1:] + [note]
@@ -76,7 +81,9 @@ def main():
     parts = list(song.parts)
     p = Probability()
     for part in parts:
-        p.addTrack(part)
+        if len(part.flat) > 250:
+            p.addTrack(part)
+    print()
 
 if __name__ == '__main__':
     main()
