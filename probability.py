@@ -33,6 +33,21 @@ class Probability(object):
         assert level
         return self.deltas[level][delta] / self.total
 
+    def addSong(self, song, cut=250):
+        for part in song.parts:
+            if len(part.flat) > cut:
+                self.addTrack(part)
+
+    @staticmethod
+    def generate(filename):
+        song = converter.parse(filename)
+        # TODO: song key to be used
+        # key = song.analyze('key')
+        # log.info(key)
+        p = Probability()
+        p.addSong(song)
+        return p
+
     def addTrack(self, track):
         store_total = self.total
         prev_notes = [REST_MIDI] * MAX_LEVEL_COND
@@ -40,6 +55,7 @@ class Probability(object):
         for event in track.flat.notesAndRests:
             self.total += 1
             dur = event.duration.quarterLength
+            # TODO: use log or not
             # assert dur
             # dur = log2(dur)
             if event.isNote:
@@ -52,7 +68,7 @@ class Probability(object):
                 note = NOTES[event.root().name]
                 midi = event.root().midi
 
-            # Add duration
+            # Add durationargs
             self.duration[dur] += 1
 
             # Add notes
@@ -75,14 +91,7 @@ class Probability(object):
 
 def main():
     filename = sys.argv[1] if len(sys.argv) > 1 else 'songs/bwv653.mid'
-    song = converter.parse(filename)
-    # key = song.analyze('key')
-    # log.info(key)
-    parts = list(song.parts)
-    p = Probability()
-    for part in parts:
-        if len(part.flat) > 250:
-            p.addTrack(part)
+    p = Probability.generate(filename)
     print()
 
 if __name__ == '__main__':
