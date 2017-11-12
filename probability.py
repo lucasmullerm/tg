@@ -1,10 +1,15 @@
 from math import log2, inf
+import logging as log
+import sys
 from collections import defaultdict
 from util import NOTES
+from music21 import converter
+
+log.basicConfig(level=log.INFO)
 
 # Constants
-MAX_LEVEL_COND = 2
-MAX_LEVEL_DELTA = 2
+MAX_LEVEL_COND = 4
+MAX_LEVEL_DELTA = 4
 REST_MIDI = -inf
 class Probability(object):
     def __init__(self):
@@ -19,18 +24,18 @@ class Probability(object):
 
     def durationP(self, duration): # duration in quarterLength
         assert self.total
-        return self.duration[note] / self.total
+        return self.duration[duration] / self.total
 
     def deltaP(self, delta, level=1): # delta in pitch
         assert self.total
-        assert self.level
+        assert level
         return self.deltas[level][delta] / self.total
 
-    def add_track(self, track):
+    def addTrack(self, track):
         store_total = self.total
         prev_notes = [REST_MIDI] * MAX_LEVEL_COND
         prev_midi = [REST_MIDI] * MAX_LEVEL_DELTA
-        for event in track:
+        for event in track.flat.notesAndRests:
             self.total += 1
             dur = event.duration.quarterLength
             assert dur
@@ -49,7 +54,7 @@ class Probability(object):
 
             # Add notes
             for l in range(MAX_LEVEL_COND):
-                cur = tuple(notes[MAX_LEVEL_COND-1:]) + (note,)
+                cur = tuple(self.notes[MAX_LEVEL_COND-1:]) + (note,)
                 self.notes[l][cur] += 1
 
             # Add deltas
@@ -61,4 +66,17 @@ class Probability(object):
             prev_notes = prev_notes[1:] + [note]
             prev_midi = prev_midi[1:] + [midi]
 
-        log.info("adding track with %d notes.".format(self.total - store_total))
+        log.info("Adding track with %d notes.", self.total - store_total)
+
+def main():
+    filename = sys.argv[1] if len(sys.argv) > 1 else 'songs/bwv653.mid'
+    song = converter.parse(filename)
+    # key = song.analyze('key')
+    # log.info(key)
+    parts = list(song.parts)
+    p = Probability()
+    for part in parts:
+        p.addTrack(part)
+
+if __name__ == '__main__':
+    main()
