@@ -94,7 +94,7 @@ class Probability(object):
 def main():
     filename = sys.argv[1] if len(sys.argv) > 1 else util.FAKE_FILE
     p = Probability.generate(filename)
-    print()
+    print(p.P(1))
 
 if __name__ == '__main__':
     main()

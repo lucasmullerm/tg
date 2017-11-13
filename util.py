@@ -1,4 +1,7 @@
 import math
+import logging as log
+
+log.basicConfig(level=log.INFO)
 
 # Constants
 MAJOR = 'major'
@@ -23,7 +26,7 @@ DELTA = 'delta'
 MEASURES = [NOTE, DURATION, DELTA]
 REST = -math.inf
 MAX_LEVEL_COND = 2
-MAX_LEVEL_DELTA = 4
+MAX_LEVEL_DELTA = 2
 FAKE_FILE = 'songs/bwv653.mid'
 
 def getNoteSequency(note, prev_notes, level):
