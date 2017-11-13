@@ -5,6 +5,31 @@ from music21 import converter
 from probability import Probability
 import util
 
+def mean(p):
+    noteH = [0] * util.MAX_LEVEL_COND
+    durationH = 0
+    deltaH = [0] * util.MAX_LEVEL_DELTA
+
+    for lv in range(util.MAX_LEVEL_COND):
+        for note in p.notes[lv]:
+            pn = p.noteP(note, lv)
+            noteH[lv] -= pn * log2(pn)
+
+    for lv in range(util.MAX_LEVEL_DELTA):
+        for note in p.deltas[lv]:
+            pd = p.deltaP(note, lv)
+            deltaH[lv] -= pd * log2(pd)
+
+    for dur in p.duration:
+        pd = p.durationP(dur)
+        durationH -= pd * log2(pd)
+
+    return {
+        util.NOTE: noteH,
+        util.DURATION: durationH,
+        util.DELTA: deltaH
+    }
+
 def calculate(track, p):
     noteH = [list()] * util.MAX_LEVEL_COND
     durationH = []
@@ -50,7 +75,7 @@ def calculate(track, p):
         util.DELTA: deltaH
     }
 
-def calculateFromSong(song, cut=250):
+def fromSong(song, cut=util.CUT, p=None):
     p = Probability()
     p.addSong(song)
     h = []
@@ -59,15 +84,22 @@ def calculateFromSong(song, cut=250):
             h.append(calculate(part, p))
     return h
 
-def calculateFromFile(filename, cut=250):
+def fromFile(filename, cut=util.CUT):
     song = converter.parse(filename)
-    return calculateFromSong(song, cut)
+    return fromSong(song, cut)
 
 def main():
     filename = sys.argv[1] if len(sys.argv) > 1 else util.FAKE_FILE
-    h = calculateFromFile(filename)
+    song = converter.parse(filename)
+    p = Probability()
+    p.addSong(song)
+
+    h = fromSong(song, p=p)
     print(h)
     log.info("%d parts.", len(h))
+
+    h = mean(p)
+    print(h)
 
 if __name__ == '__main__':
     main()

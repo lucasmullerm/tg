@@ -37,7 +37,7 @@ class Probability(object):
         elif measure == util.DELTA:
             return self.deltaP(event, level)
 
-    def addSong(self, song, cut=250):
+    def addSong(self, song, cut=util.CUT):
         for part in song.parts:
             if len(part.flat) > cut:
                 self.addTrack(part)

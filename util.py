@@ -28,6 +28,7 @@ REST = -math.inf
 MAX_LEVEL_COND = 2
 MAX_LEVEL_DELTA = 2
 FAKE_FILE = 'songs/bwv653.mid'
+CUT = 250 # minimum of notes for the track to be considered
 
 def getNoteSequency(note, prev_notes, level):
     return tuple(prev_notes[MAX_LEVEL_COND-level:]) + (note,)
