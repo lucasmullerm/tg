@@ -1,5 +1,6 @@
 import math
 import logging as log
+import sys
 
 log.basicConfig(level=log.INFO)
 
@@ -29,6 +30,7 @@ MAX_LEVEL_COND = 2
 MAX_LEVEL_DELTA = 2
 FAKE_FILE = 'songs/bwv653.mid'
 CUT = 250 # minimum of notes for the track to be considered
+USE_CHORD = len(sys.argv) > 2 and sys.argv == 'chord'
 
 def getNoteSequency(note, prev_notes, level):
     return tuple(prev_notes[MAX_LEVEL_COND-level:]) + (note,)
@@ -38,6 +40,15 @@ def getDelta(midi, prev_midi, level):
     if math.isnan(delta):
         return 0
     return delta
+
+def simplifyChord(chord):
+    notes = map(lambda p: p.name, chord.pitches)
+    unique_notes = set(notes)
+    numbers = map(lambda n: NOTES[n], unique_notes)
+    simplified = sorted(numbers)
+    if len(simplified) == 1:
+        return simplified[0]
+    return tuple(simplified)
 
 def getNoteNumber(tonic, note):
     num = NOTES[note] - NOTES[tonic] + 1

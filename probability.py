@@ -69,7 +69,10 @@ class Probability(object):
                 note = util.REST
                 midi = util.REST
             elif event.isChord: # get root note
-                note = util.NOTES[event.root().name]
+                if util.USE_CHORD:
+                    note = util.simplifyChord(event)
+                else:
+                    note = util.NOTES[event.root().name]
                 midi = event.root().midi
 
             # Add duration
