@@ -4,6 +4,8 @@ log.txt
 log
 prob
 rela/*
+*.pdf
+*.jpg
 
 .vscode/*
 !.vscode/settings.json

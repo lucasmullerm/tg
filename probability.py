@@ -86,6 +86,8 @@ class Probability(object):
             # Add deltas
             for lv in range(1, util.MAX_LEVEL_DELTA):
                 delta = util.getDelta(midi, prev_midi, lv)
+                # delta = abs(delta)
+                # delta = 1
                 self.deltas[lv][delta] += 1
 
             # Update previous

@@ -31,9 +31,9 @@ def mean(p):
     }
 
 def calculate(track, p):
-    noteH = [list()] * util.MAX_LEVEL_COND
+    noteH = [[] for i in range(util.MAX_LEVEL_COND)]
     durationH = []
-    deltaH = [list()] * util.MAX_LEVEL_DELTA
+    deltaH = [[] for i in range(util.MAX_LEVEL_DELTA)]
 
     prev_notes = [util.REST] * util.MAX_LEVEL_COND
     prev_midi = [util.REST] * util.MAX_LEVEL_DELTA
@@ -57,6 +57,8 @@ def calculate(track, p):
         for lv in range(util.MAX_LEVEL_COND):
             cur = util.getNoteSequency(note, prev_notes, lv)
             pe = p.noteP(cur, lv)
+            if lv == 1:
+                pe = pe / p.noteP(cur[0])
             noteH[lv].append(-log2(pe))
 
         # Deltas
@@ -77,7 +79,7 @@ def calculate(track, p):
 
 def fromSong(song, cut=util.CUT, p=None):
     p = Probability()
-    p.addSong(song)
+    p.addSong(song, cut)
     h = []
     for part in song.parts:
         if len(part.flat) > cut:

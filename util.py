@@ -26,8 +26,8 @@ DURATION = 'duration'
 DELTA = 'delta'
 MEASURES = [NOTE, DURATION, DELTA]
 REST = -math.inf
-MAX_LEVEL_COND = 2
-MAX_LEVEL_DELTA = 2
+MAX_LEVEL_COND = 3
+MAX_LEVEL_DELTA = 3
 FAKE_FILE = 'songs/bwv653.mid'
 CUT = 250 # minimum of notes for the track to be considered
 USE_CHORD = len(sys.argv) > 2 and sys.argv == 'chord'
