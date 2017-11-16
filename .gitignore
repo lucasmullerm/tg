@@ -6,6 +6,7 @@ prob
 rela/*
 *.pdf
 *.jpg
+songs/*
 
 .vscode/*
 !.vscode/settings.json
