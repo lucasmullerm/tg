@@ -10,10 +10,19 @@ def mean(p):
     durationH = 0
     deltaH = [0] * util.MAX_LEVEL_DELTA
 
-    for lv in range(util.MAX_LEVEL_COND):
-        for note in p.notes[lv]:
-            pn = p.noteP(note, lv)
-            noteH[lv] -= pn * log2(pn)
+    # single probability
+    for note in p.notes[0]:
+        pn = p.noteP(note)
+        noteH[0] -= pn * log2(pn)
+
+    # conditional
+    for x in p.notes[0]:
+        x = x[0]
+        for y in p.notes[0]:
+            y = y[0]
+            pxy = p.noteP((x,y), 1)
+            px = p.noteP((x,))
+            noteH[1] -= pxy * log2(pxy / px)
 
     for lv in range(util.MAX_LEVEL_DELTA):
         for note in p.deltas[lv]:
@@ -30,10 +39,12 @@ def mean(p):
         util.DELTA: deltaH
     }
 
-def calculate(track, p):
+def calculate(track, p, tonic, mode):
     noteH = [[] for i in range(util.MAX_LEVEL_COND)]
     durationH = []
     deltaH = [[] for i in range(util.MAX_LEVEL_DELTA)]
+
+    midiMap = util.getMidiScaleMap(tonic, mode)
 
     prev_notes = [util.REST] * util.MAX_LEVEL_COND
     prev_midi = [util.REST] * util.MAX_LEVEL_DELTA
@@ -63,7 +74,7 @@ def calculate(track, p):
 
         # Deltas
         for lv in range(1, util.MAX_LEVEL_DELTA):
-            delta = util.getDelta(midi, prev_midi, lv)
+            delta = util.getDelta(midi, prev_midi, lv, midiMap)
             pe = p.deltaP(delta, lv)
             deltaH[lv].append(-log2(pe))
 

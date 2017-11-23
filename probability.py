@@ -4,7 +4,7 @@ from collections import defaultdict
 import util
 from music21 import converter
 
-log.basicConfig(level=log.INFO)
+log.basicConfig(level=util.LOG_LEVEL)
 
 # Constants
 class Probability(object):
@@ -18,16 +18,16 @@ class Probability(object):
         assert self.total
         if not level and not isinstance(note, tuple):
             note = (note,)
-        return self.notes[level][note] / self.total
+        return (self.notes[level][note] or 1) / self.total
 
     def durationP(self, duration): # duration in quarterLength
         assert self.total
-        return self.duration[duration] / self.total
+        return (self.duration[duration] or 1) / self.total
 
     def deltaP(self, delta, level=1): # delta in pitch
         assert self.total
         assert level
-        return self.deltas[level][delta] / self.total
+        return (self.deltas[level][delta] or 1) / self.total
 
     def P(self, event, measure=util.NOTE, level=0):
         if measure == util.NOTE:
@@ -38,9 +38,12 @@ class Probability(object):
             return self.deltaP(event, level)
 
     def addSong(self, song, cut=util.CUT):
+        key = song.analyze('key')
+        tonic = key.tonic.name
+        mode = key.mode
         for part in song.parts:
-            if len(part.flat) > cut:
-                self.addTrack(part)
+            if len(part.flat.notesAndRests) > cut:
+                self.addTrack(part, tonic, mode)
 
     @staticmethod
     def generate(filename):
@@ -52,7 +55,8 @@ class Probability(object):
         p.addSong(song)
         return p
 
-    def addTrack(self, track):
+    def addTrack(self, track, tonic, mode=util.MAJOR):
+        midiMap = util.getMidiScaleMap(tonic, mode)
         store_total = self.total
         prev_notes = [util.REST] * util.MAX_LEVEL_COND
         prev_midi = [util.REST] * util.MAX_LEVEL_DELTA
@@ -85,9 +89,8 @@ class Probability(object):
 
             # Add deltas
             for lv in range(1, util.MAX_LEVEL_DELTA):
-                delta = util.getDelta(midi, prev_midi, lv)
+                delta = util.getDelta(midi, prev_midi, lv, midiMap)
                 # delta = abs(delta)
-                # delta = 1
                 self.deltas[lv][delta] += 1
 
             # Update previous
